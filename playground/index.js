@@ -21,24 +21,24 @@ import {
   CanvasTexture,
   Float32BufferAttribute,
   RepeatWrapping,
-} from 'three';
-import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
-import URDFLoader from 'urdf-loader';
+} from "three";
+import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
+import URDFLoader from "urdf-loader";
 // 导入控制工具函数
 import {
   setupKeyboardControls,
   setupJoyconControls,
   setupControlPanel,
-} from './robotControls.js';
+} from "./robotControls.js";
 import {
   connectJoyCon,
   connectedJoyCons,
   JoyConLeft,
   JoyConRight,
   GeneralController,
-} from 'joy-con-webhid';
+} from "joy-con-webhid";
 // Import language system
-import { initLanguageSystem, t } from './language.js';
+import { initLanguageSystem, t } from "./language.js";
 
 // 声明为全局变量
 let scene, camera, renderer, controls;
@@ -48,7 +48,7 @@ let keyboardUpdate;
 let joyconUpdate;
 init();
 render();
-
+window.fixedCameraPosition = [13, 18, -15];
 function init() {
   // Initialize language system
   initLanguageSystem();
@@ -59,6 +59,7 @@ function init() {
   camera = new PerspectiveCamera();
   camera.position.set(13, 18, -15);
   camera.lookAt(0, 0, 0);
+  window.camera = camera;
 
   renderer = new WebGLRenderer({ antialias: true });
   // renderer.outputEncoding = sRGBEncoding;
@@ -72,6 +73,12 @@ function init() {
   const directionalLight = new DirectionalLight(0xffffff, 1.0);
   directionalLight.castShadow = true;
   directionalLight.shadow.mapSize.setScalar(1024);
+  // Add these lines to increase shadow area coverage
+  directionalLight.shadow.camera.left = -30;
+  directionalLight.shadow.camera.right = 30;
+  directionalLight.shadow.camera.top = 30;
+  directionalLight.shadow.camera.bottom = -30;
+  directionalLight.shadow.camera.far = 50;
   directionalLight.position.set(5, 30, 5);
   scene.add(directionalLight);
 
@@ -107,7 +114,7 @@ function init() {
 
   // 添加格子纹理
   const geometry = ground.geometry;
-  const positionAttribute = geometry.getAttribute('position');
+  const positionAttribute = geometry.getAttribute("position");
 
   // 创建格子纹理的UV坐标
   const uvs = [];
@@ -120,7 +127,7 @@ function init() {
     uvs.push(x * gridScale, y * gridScale);
   }
 
-  geometry.setAttribute('uv', new Float32BufferAttribute(uvs, 2));
+  geometry.setAttribute("uv", new Float32BufferAttribute(uvs, 2));
 
   // 更新材质，添加格子纹理
   groundMaterial.map = createGridTexture();
@@ -134,6 +141,7 @@ function init() {
   controls.minDistance = 4;
   controls.target.y = 1;
   controls.update();
+  window.cameraControls = controls;
 
   // 直接加载bambot模型
   function loadBambotModel() {
@@ -200,7 +208,7 @@ function init() {
   loadBambotModel();
 
   onResize();
-  window.addEventListener('resize', onResize);
+  window.addEventListener("resize", onResize);
 
   // Setup UI for control panel
   setupControlPanel();
@@ -213,19 +221,19 @@ function init() {
 function logJointLimits(robot) {
   if (!robot || !robot.joints) return;
 
-  console.log('Robot joint limits:');
+  console.log("Robot joint limits:");
   Object.entries(robot.joints).forEach(([name, joint]) => {
     console.log(`Joint: ${name}`);
     console.log(`  Type: ${joint.jointType}`);
 
-    if (joint.jointType !== 'fixed' && joint.jointType !== 'continuous') {
+    if (joint.jointType !== "fixed" && joint.jointType !== "continuous") {
       console.log(
         `  Limits: ${joint.limit.lower.toFixed(4)} to ${joint.limit.upper.toFixed(4)} rad`,
       );
       console.log(
-        `  Current value: ${Array.isArray(joint.jointValue) ? joint.jointValue.join(', ') : joint.jointValue}`,
+        `  Current value: ${Array.isArray(joint.jointValue) ? joint.jointValue.join(", ") : joint.jointValue}`,
       );
-    } else if (joint.jointType === 'continuous') {
+    } else if (joint.jointType === "continuous") {
       console.log(`  No limits (continuous joint)`);
     } else {
       console.log(`  No limits (fixed joint)`);
@@ -257,19 +265,19 @@ function render() {
 
 // 添加创建格子纹理的函数
 function createGridTexture() {
-  const canvas = document.createElement('canvas');
+  const canvas = document.createElement("canvas");
   canvas.width = 512;
   canvas.height = 512;
 
-  const context = canvas.getContext('2d');
+  const context = canvas.getContext("2d");
 
   // 填充底色
-  context.fillStyle = '#808080';
+  context.fillStyle = "#808080";
   context.fillRect(0, 0, canvas.width, canvas.height);
 
   // 绘制格子线
   context.lineWidth = 1;
-  context.strokeStyle = '#606060';
+  context.strokeStyle = "#606060";
 
   const cellSize = 32; // 每个格子的大小
 
